@@ -1,3 +1,7 @@
+[![Travis](https://img.shields.io/travis/Yelp/swagger_zipkin.svg)](https://travis-ci.org/Yelp/swagger_zipkin?branch=master)
+[![PyPi version](https://img.shields.io/pypi/v/swagger_zipkin.svg)](https://pypi.python.org/pypi/swagger_zipkin/)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/swagger_zipkin.svg)](https://pypi.python.org/pypi/swagger_zipkin/)
+
 # swagger_zipkin
 
 `swagger_zipkin` contains zipkin integration tools for instrumenting downstream
