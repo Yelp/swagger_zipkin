@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from pyramid_zipkin.zipkin import create_headers_for_new_span
+from py_zipkin.zipkin import create_http_headers_for_new_span
 
 from swagger_zipkin.decorate_client import decorate_client
 
@@ -24,7 +24,7 @@ class ZipkinResourceDecorator(object):
         kwargs.setdefault('_request_options', {})
         headers = kwargs['_request_options'].setdefault('headers', {})
 
-        headers.update(create_headers_for_new_span())
+        headers.update(create_http_headers_for_new_span())
         return getattr(self.resource, call_name)(*args, **kwargs)
 
 
