@@ -5,20 +5,15 @@ swagger_zipkin |version|
  service calls made using `bravado <http://bravado.readthedocs.org/en/latest/>`_ or
 `swagger-py <http://swagger-py.readthedocs.org/en/latest/>`_ http clients.
 
-It is aimed to be a standalone package, with only dependancy being
-`pyramid_zipkin <https://github.com/Yelp/pyramid_zipkin>`_.
-
-The limitations are that the service should run on
-`Pyramid framework<http://docs.pylonsproject.org/en/latest/docs/pyramid.html>`_
-and use `pyramid_zipkin <https://github.com/Yelp/pyramid_zipkin>`_ for zipkin
-integration.
+It is aimed to be a standalone package, with only dependency being
+`py_zipkin <https://github.com/Yelp/py_zipkin>`_.
 
 Quick Start
 -----------
 
     The decorator can be applied to any swagger-py or bravado client. The example
     shows a sample usage on bravado. It assume the code is being called from within
-    a pyramid view.
+a `py_zipkin.zipkin.zipkin_span` context manager or decorator.
 
     .. code-block:: python
 
