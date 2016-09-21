@@ -20,7 +20,7 @@ setup(
     description='Zipkin decorators for swagger clients - swagger-py and bravado.',
     packages=find_packages(exclude=['tests*']),
     install_requires=[
-        'pyramid_zipkin>=0.1.1',
+        'py_zipkin',
     ],
     keywords='zipkin',
     classifiers=[

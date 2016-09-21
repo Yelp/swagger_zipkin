@@ -37,7 +37,7 @@ def test_client_request_option_decorator():
     wrapped_client = ZipkinClientDecorator(client)
     param = mock.Mock()
 
-    with mock.patch('swagger_zipkin.zipkin_decorator.create_headers_for_new_span', side_effect=[
+    with mock.patch('swagger_zipkin.zipkin_decorator.create_http_headers_for_new_span', side_effect=[
         create_span(trace_id, 'span1', span_id),
         create_span(trace_id, 'span2', span_id),
     ]):
