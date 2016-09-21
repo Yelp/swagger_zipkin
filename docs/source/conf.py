@@ -37,5 +37,5 @@ htmlhelp_basename = 'swagger_zipkindoc'
 
 
 intersphinx_mapping = {
-    'http://docs.python.org/': None
+    'http://docs.python.org/': None,
 }
