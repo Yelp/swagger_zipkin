@@ -64,9 +64,6 @@ def decorate_client(api_client, func, name):
     :returns: the attribute from the `api_client` or a partial of `func`
     :raises: :class:`AttributeError`
     """
-    if not hasattr(api_client, name):
-        raise AttributeError(name)
-
     client_attr = getattr(api_client, name)
     if not callable(client_attr):
         return client_attr
