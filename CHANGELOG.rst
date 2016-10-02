@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.3.1 (2016-10-02)
+------------------
+- Don't clobber AttributeError stack traces
+
 0.3.0 (2016-09-21)
 ------------------
 - Make the wrapper a bit friendlier to the wrapped client, supporting `dir`
