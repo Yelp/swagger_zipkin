@@ -40,10 +40,10 @@ class ZipkinClientDecorator(object):
     """
 
     def __init__(self, client):
-        self.client = client
+        self._client = client
 
     def __getattr__(self, name):
-        return ZipkinResourceDecorator(getattr(self.client, name))
+        return ZipkinResourceDecorator(getattr(self._client, name))
 
     def __dir__(self):
-        return dir(self.client)  # pragma: no cover
+        return dir(self._client)  # pragma: no cover
