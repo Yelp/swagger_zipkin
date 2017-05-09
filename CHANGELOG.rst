@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.3.2 (2017-05-08)
+------------------
+- Rename 'client' attribute.
+
 0.3.1 (2016-10-02)
 ------------------
 - Don't clobber AttributeError stack traces
