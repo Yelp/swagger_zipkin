@@ -57,3 +57,18 @@ def test_client_request_option_decorator():
             param,
             _request_options=create_request_options(trace_id, 'span2', span_id)
         )
+
+
+def test_client_dir():
+    class V1Operation():
+        def foo():
+            return 'foo'
+
+    class Client(object):
+        def __init__(self):
+            self.v1 = V1Operation()
+
+    client = Client()
+    wrapped_client = ZipkinClientDecorator(client)
+
+    assert 'foo' in dir(wrapped_client.v1)
