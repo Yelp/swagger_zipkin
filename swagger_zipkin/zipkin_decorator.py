@@ -27,6 +27,9 @@ class ZipkinResourceDecorator(object):
         headers.update(create_http_headers_for_new_span())
         return getattr(self.resource, call_name)(*args, **kwargs)
 
+    def __dir__(self):
+        return dir(self.resource)
+
 
 class ZipkinClientDecorator(object):
     """A wrapper to swagger client (swagger-py or bravado) to pass on zipkin
