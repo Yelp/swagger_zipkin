@@ -29,6 +29,22 @@ def create_request_options(trace_id, span_id, parent_span_id):
     }
 
 
+def create_client():
+    class V1Operation():
+        def foo():
+            return 'foo'
+
+    class Client(object):
+        def __init__(self):
+            self.v1 = V1Operation()
+
+        def func(self):
+            return 'some func'
+
+    client = Client()
+    return client
+
+
 def test_client_request_option_decorator():
     trace_id = 'trace_id'
     span_id = 'span_id'
@@ -60,15 +76,13 @@ def test_client_request_option_decorator():
 
 
 def test_client_dir():
-    class V1Operation():
-        def foo():
-            return 'foo'
-
-    class Client(object):
-        def __init__(self):
-            self.v1 = V1Operation()
-
-    client = Client()
+    client = create_client()
     wrapped_client = ZipkinClientDecorator(client)
 
     assert 'foo' in dir(wrapped_client.v1)
+
+
+def test_callable():
+    client = create_client()
+    wrapped_client = ZipkinClientDecorator(client)
+    assert 'some func' == wrapped_client.func()
