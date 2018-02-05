@@ -14,8 +14,9 @@ class ZipkinResourceDecorator(object):
     :type resource: :class:`swaggerpy.client.Resource` or :class:`bravado_core.resource.Resource`
     """
 
-    def __init__(self, resource):
+    def __init__(self, resource, context_stack=None):
         self.resource = resource
+        self._context_stack = context_stack
 
     def __getattr__(self, name):
         return decorate_client(self.resource, self.with_headers, name)
@@ -24,7 +25,8 @@ class ZipkinResourceDecorator(object):
         kwargs.setdefault('_request_options', {})
         headers = kwargs['_request_options'].setdefault('headers', {})
 
-        headers.update(create_http_headers_for_new_span())
+        headers.update(create_http_headers_for_new_span(
+            context_stack=self._context_stack))
         return getattr(self.resource, call_name)(*args, **kwargs)
 
     def __dir__(self):
@@ -42,11 +44,15 @@ class ZipkinClientDecorator(object):
     :type client: :class:`swaggerpy.client.SwaggerClient` or :class:`bravado.client.SwaggerClient`.
     """
 
-    def __init__(self, client):
+    def __init__(self, client, context_stack=None):
         self._client = client
+        self._context_stack = context_stack
 
     def __getattr__(self, name):
-        return ZipkinResourceDecorator(getattr(self._client, name))
+        return ZipkinResourceDecorator(
+            getattr(self._client, name),
+            context_stack=self._context_stack,
+        )
 
     def __dir__(self):
         return dir(self._client)  # pragma: no cover
