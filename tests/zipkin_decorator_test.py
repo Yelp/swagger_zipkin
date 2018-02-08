@@ -59,6 +59,27 @@ def test_client_request_option_decorator():
         )
 
 
+def test_client_explicit_context():
+    client = mock.Mock()
+    wrapped_client = ZipkinClientDecorator(
+        client,
+        context_stack=mock.sentinel.context_stack,
+    )
+
+    with mock.patch(
+        'swagger_zipkin.zipkin_decorator.create_http_headers_for_new_span',
+        side_effect=[
+            create_span('trace_id', 'span1', 'span_id'),
+            create_span('trace_id', 'span2', 'span_id'),
+        ],
+    ) as create_http_headers_mock:
+        resource = wrapped_client.resource
+        resource.operation(mock.Mock())
+        create_http_headers_mock.assert_called_with(
+            context_stack=mock.sentinel.context_stack,
+        )
+
+
 def test_client_dir():
     class V1Operation():
         def foo():
