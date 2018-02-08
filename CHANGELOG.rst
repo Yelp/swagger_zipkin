@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.4.0 (2018-02-08)
+------------------
+- Add support for passing in an explicit context object.
+
 0.3.3 (2017-08-01)
 ------------------
 - Add REPL completion for resource.
