@@ -9,8 +9,10 @@ matrix:
       env: TOXENV=py35
     - python: 3.6
       env: TOXENV=py36
-    - python: 2.7
+    - python: 3.6
       env: TOXENV=flake8
+    - python: 3.6
+      env: TOXENV=pre-commit
 install:
 - "pip install tox coveralls"
 script: tox
