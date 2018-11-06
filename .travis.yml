@@ -1,20 +1,29 @@
 language: python
 matrix:
   include:
-    - python: 2.7
-      env: TOXENV=py27
-    - python: 3.4
-      env: TOXENV=py34
-    - python: 3.5
-      env: TOXENV=py35
-    - python: 3.6
-      env: TOXENV=py36
-    - python: 3.6
-      env: TOXENV=flake8
-    - python: 3.6
-      env: TOXENV=pre-commit
+  - python: 2.7
+    env: TOXENV=py27
+  - python: 3.4
+    env: TOXENV=py34
+  - python: 3.5
+    env: TOXENV=py35
+  - python: 3.6
+    env: TOXENV=py36
+  - python: 3.6
+    env: TOXENV=flake8
+  - python: 3.6
+    env: TOXENV=pre-commit
 install:
-- "pip install tox coveralls"
+- pip install tox coveralls
 script: tox
 after_success: coveralls
 sudo: false
+deploy:
+  provider: pypi
+  user: "yelplabs"
+  password:
+    secure: jg50s5wt6uuHIN+c0pRE86FKPMsLP8302OjgZOwLHvofYWEZ1L2+hahqHGaDEZZ7OKm1/UJRjpG5wU740a+L+XkFqCyXJoKWKVZIIdltAb1G2lNgZi7/mKFqGHx0VEhcsEAmJ+PyejJkGJrQwsQsXzhRBIKBBymhjBTt63YKtsmwzMe4jXQADo9/9jzkWJsF+ADITLiUXoRAG4VUTYM/Ychv98WDZe3loeADzBhwxtaerGXfSw6CxOJQLp4bxQnTpYmRfKBKIZygBJsi5GfDC8iiZFwb9bf3+7TIlScGueU5SH/HJ1SNeYwDkiZ0Rfrcwlkhil9AmT3nm7mRtTYpmjRht/AtxtoLArPWKa7SEuakt1XfBDTuisSh3wiHHELQcd+XEiWaW6HU+zCsWgaS8XX5wghvTyN/vhIDCR93t6Ecp0iPpx84BFoRPRKxxGKslqA692fcHkBsxbJcTOsvnGUu4WfGkFq+HwlO6rAeFA4Ni17RnZ16wCd7/ZvsfscM4O15PVZuvHdoQdUi0vmb4JFtnR2bcG6pX1XBwL84DdB/N4g2Aq8UL2D6tfRk13pndUP7VAg/BFzun0SnLhCwGqL4fwXE+JSW96kiaDL2gwu45RwApRLFlsfJOjw5KpHTuH6rgzZz8NuypORF4EKddRqbtXkikICW434Z4FbpxGg=
+  on:
+    tags: true
+    condition: $TOXENV = py27
+  distributions: "sdist bdist_wheel"
