@@ -1,6 +1,6 @@
 REBUILD_FLAG =
 
-.PHONY: help all production clean clean-pyc clean-build lint test coverage docs
+.PHONY: help all clean clean-pyc clean-build lint test coverage docs
 
 help:
 	@echo "clean-build - remove build artifacts"
@@ -8,10 +8,7 @@ help:
 	@echo "test - run tests quickly with the default Python"
 	@echo "coverage - check code coverage"
 
-all: production
-
-production:
-	@true
+all: test
 
 clean: clean-build clean-pyc
 
