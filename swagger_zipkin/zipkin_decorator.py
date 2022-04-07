@@ -21,6 +21,9 @@ class ZipkinResourceDecorator(object):
     def __getattr__(self, name):
         return decorate_client(self.resource, self.with_headers, name)
 
+    def __call__(self, *args, **kwargs):
+        return self.resource(*args, **kwargs)
+
     def with_headers(self, call_name, *args, **kwargs):
         kwargs.setdefault('_request_options', {})
         headers = kwargs['_request_options'].setdefault('headers', {})
