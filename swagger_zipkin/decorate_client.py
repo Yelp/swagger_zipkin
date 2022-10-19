@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 import functools
 
 
-class OperationDecorator(object):
+class OperationDecorator:
     """A helper to preserve attributes of :class:`swaggerpy.client.Operation`
     and :class:`bravado.client.CallableOperation` while decorating their
     __call__() methods

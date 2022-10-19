@@ -1,13 +1,9 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 from py_zipkin.zipkin import create_http_headers_for_new_span
 
 from swagger_zipkin.decorate_client import decorate_client
 
 
-class ZipkinResourceDecorator(object):
+class ZipkinResourceDecorator:
     """A wrapper to the swagger resource.
 
     :param resource: A resource object. eg. `client.pet`, `client.store`.
@@ -33,7 +29,7 @@ class ZipkinResourceDecorator(object):
         return dir(self.resource)
 
 
-class ZipkinClientDecorator(object):
+class ZipkinClientDecorator:
     """A wrapper to swagger client (swagger-py or bravado) to pass on zipkin
     headers to the service call.
 
