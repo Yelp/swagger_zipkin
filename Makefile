@@ -30,6 +30,9 @@ docs:
 
 coverage: test
 
+venv:
+	tox -e venv
+
 .venv.touch: setup.py requirements-dev.txt
 	$(eval REBUILD_FLAG := --recreate)
 	touch .venv.touch
