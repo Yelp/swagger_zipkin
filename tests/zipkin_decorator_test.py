@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import mock
+from unittest import mock
 
 from swagger_zipkin.zipkin_decorator import ZipkinClientDecorator
 
@@ -85,7 +81,7 @@ def test_client_dir():
         def foo():
             return 'foo'
 
-    class Client(object):
+    class Client:
         def __init__(self):
             self.v1 = V1Operation()
 

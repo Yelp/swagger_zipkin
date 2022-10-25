@@ -1,7 +1,4 @@
-# coveragepy==5.0 fails with `Safety level may not be changed inside a transaction`
-# on python 3.6.0 (xenial)
-coverage<5
+coverage
 flake8
-mock
-pre-commit<1.12.0
+pre-commit
 pytest

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+Unreleased
+------------------
+- Drop support for EOL Pythons
+
 0.4.0 (2018-02-08)
 ------------------
 - Add support for passing in an explicit context object.

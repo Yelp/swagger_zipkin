@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from unittest import mock
 
-import mock
 import pytest
 
 from swagger_zipkin.decorate_client import decorate_client
@@ -40,7 +37,7 @@ def test_decorate_client_callable_being_invoked():
 
 
 def test_decorate_client_callable_attribute_retrieved():
-    class Foo(object):
+    class Foo:
         def __init__(self):
             self.bar = 'bar'
 
