@@ -1,4 +1,4 @@
-[![Travis](https://img.shields.io/github/workflow/status/Yelp/swagger_zipkin/build.yaml/master.svg)](https://github.com/Yelp/swagger_zipkin/actions/workflows/build.yaml?query=branch:master)
+[![Github Actions build](https://img.shields.io/github/workflow/status/Yelp/swagger_zipkin/build/master.svg)](https://github.com/Yelp/swagger_zipkin/actions/workflows/build.yaml?query=branch:master)
 [![PyPi version](https://img.shields.io/pypi/v/swagger_zipkin.svg)](https://pypi.python.org/pypi/swagger_zipkin/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/swagger_zipkin.svg)](https://pypi.python.org/pypi/swagger_zipkin/)
 

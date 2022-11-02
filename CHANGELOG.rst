@@ -3,6 +3,7 @@ Changelog
 
 Unreleased
 ------------------
+- Add type annotations
 - Drop support for EOL Pythons
 
 0.4.0 (2018-02-08)

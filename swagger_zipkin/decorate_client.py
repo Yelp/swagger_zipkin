@@ -1,7 +1,36 @@
+from __future__ import annotations
+
 import functools
+from typing import Callable
+from typing import Generic
+from typing import TypeVar
+
+from typing_extensions import ParamSpec
+from typing_extensions import Protocol
 
 
-class OperationDecorator:
+T = TypeVar('T', covariant=True)
+P = ParamSpec('P')
+
+
+class Operation(Protocol):
+    ...
+
+
+class Resource(Protocol[P, T]):
+    def __getattr__(self, name: str) -> Operation:
+        ...  # pragma: no cover
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        ...  # pragma: no cover
+
+
+class Client(Protocol):
+    def __getattr__(self, name: str) -> Resource:
+        ...  # pragma: no cover
+
+
+class OperationDecorator(Generic[P, T]):
     """A helper to preserve attributes of :class:`swaggerpy.client.Operation`
     and :class:`bravado.client.CallableOperation` while decorating their
     __call__() methods
@@ -15,18 +44,22 @@ class OperationDecorator:
     :type  func: callable
     """
 
-    def __init__(self, operation, func):
+    def __init__(self, operation: Resource, func: Callable[P, T]) -> None:
         self.operation = operation
         self.func = func
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Operation:
         return getattr(self.operation, name)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
         return self.func(*args, **kwargs)
 
 
-def decorate_client(api_client, func, name):
+def decorate_client(
+    api_client: Client,
+    func: Callable[P, T],
+    name: str,
+) -> Resource[P, T]:
     """A helper for decorating :class:`bravado.client.SwaggerClient`.
     :class:`bravado.client.SwaggerClient` can be extended by creating a class
     which wraps all calls to it. This helper is used in a :func:`__getattr__`
