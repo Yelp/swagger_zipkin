@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='swagger_zipkin',
-    version="0.4.0",
+    version="0.5.1",
     provides=["swagger_zipkin"],
     author='Yelp, Inc.',
     author_email='opensource+swagger-zipkin@yelp.com',
