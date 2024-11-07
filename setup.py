@@ -16,6 +16,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         'py_zipkin>=0.10.1',
+        'opentelemetry-sdk>=0.26.1',
     ],
     keywords='zipkin',
     classifiers=[
