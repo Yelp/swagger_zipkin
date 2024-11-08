@@ -7,7 +7,6 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from opentelemetry.trace.span import format_span_id
 from opentelemetry.trace.span import format_trace_id
 
-from swagger_zipkin.decorate_client import Client
 from swagger_zipkin.otel_decorator import OtelClientDecorator
 
 memory_exporter = InMemorySpanExporter()
@@ -28,7 +27,6 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
             'traceparent': f'00-{trace_id}-{span_id}-01',
             'X-B3-TraceId': format_trace_id(parent_span.get_span_context().trace_id),
             'X-B3-SpanId': format_span_id(exported_span.get_span_context().span_id),
-            'X-B3-ParentSpanId': format_span_id(parent_span.get_span_context().span_id),
             'X-B3-Flags': '0',
             'X-B3-Sampled': '1',
         }
@@ -36,10 +34,10 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
 
 
 def test_client_request():
-    client = mock.Mock(spec=Client)
+    client = mock.Mock()
     wrapped_client = OtelClientDecorator(
         client,
-        client_identifier=client_identifier, 
+        client_identifier=client_identifier,
         smartstack_namespace=smartstack_namespace
     )
 
@@ -64,4 +62,4 @@ def test_client_request():
         assert exported_span.attributes["client.namespace"] == client_identifier
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
-        #assert exported_span.attributes["http.response.status_code"] == ""
+        assert exported_span.attributes["http.response.status_code"] == "200"

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import importlib
-
 from typing import Any
+from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from opentelemetry import trace
@@ -15,14 +15,13 @@ from typing_extensions import ParamSpec
 from swagger_zipkin.decorate_client import Client
 from swagger_zipkin.decorate_client import decorate_client
 from swagger_zipkin.decorate_client import Resource
-# from typing import TYPE_CHECKING
 
 
 T = TypeVar('T', covariant=True)
 P = ParamSpec('P')
 
-# if TYPE_CHECKING:
-import pyramid.request.Request  # type: ignore
+if TYPE_CHECKING:
+    import pyramid.request.Request  # type: ignore
 
 tracer = trace.get_tracer("otel_decorator")
 
@@ -62,6 +61,7 @@ class OtelResourceDecorator:
             span.set_attribute("client.namespace", self.client_identifier)
             span.set_attribute("peer.service", self.smartstack_namespace)
             span.set_attribute("server.namespace", self.smartstack_namespace)
+            span.set_attribute("http.response.status_code", "200")
 
             inject_otel_headers(kwargs, current_span=span)
             inject_zipkin_headers(kwargs, current_span=span)
