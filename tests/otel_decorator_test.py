@@ -1,7 +1,5 @@
 from unittest import mock
 
-import os
-
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -21,6 +19,7 @@ client_identifier = "test_client"
 smartstack_namespace = "smartstack_namespace"
 tracer = trace.get_tracer("otel_decorator")
 
+
 def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
     trace_id = format_trace_id(parent_span.get_span_context().trace_id)
     span_id = format_span_id(exported_span.get_span_context().span_id)
@@ -35,27 +34,30 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
         }
     }
 
+
 def test_client_request():
-    client = mock.Mock()
+    client = mock.Mock(spec=Client)
     wrapped_client = OtelClientDecorator(
-        client, client_identifier=client_identifier, smartstack_namespace=smartstack_namespace
+        client,
+        client_identifier=client_identifier, 
+        smartstack_namespace=smartstack_namespace
     )
-    
+
     with tracer.start_as_current_span(
         "parent_span", kind=trace.SpanKind.SERVER
     ) as parent_span:
         resource = wrapped_client.resource
         param = mock.Mock()
         resource.operation(param)
-               
+
         assert len(memory_exporter.get_finished_spans()) == 1
         exported_span = memory_exporter.get_finished_spans()[0]
-                
+
         client.resource.operation.assert_called_with(
             param,
             _request_options=create_request_options(parent_span, exported_span)
         )
-        
+
         assert exported_span.attributes["url.path"] == ""
         assert exported_span.attributes["http.request.method"] == ""
         assert exported_span.attributes["http.route"] == ""
@@ -63,6 +65,3 @@ def test_client_request():
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
         #assert exported_span.attributes["http.response.status_code"] == ""
-
-
-

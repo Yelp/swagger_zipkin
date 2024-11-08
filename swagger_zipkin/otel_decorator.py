@@ -1,30 +1,28 @@
 from __future__ import annotations
 
-import os
 import importlib
 
 from typing import Any
-from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from opentelemetry.trace.span import TraceFlags
 from opentelemetry.trace.span import format_span_id
 from opentelemetry.trace.span import format_trace_id
-
+from opentelemetry.trace.span import TraceFlags
 from typing_extensions import ParamSpec
 
 from swagger_zipkin.decorate_client import Client
 from swagger_zipkin.decorate_client import decorate_client
 from swagger_zipkin.decorate_client import Resource
+# from typing import TYPE_CHECKING
 
 
 T = TypeVar('T', covariant=True)
 P = ParamSpec('P')
 
-if TYPE_CHECKING:
-    import pyramid.request.Request  # type: ignore
+# if TYPE_CHECKING:
+import pyramid.request.Request  # type: ignore
 
 tracer = trace.get_tracer("otel_decorator")
 
@@ -52,15 +50,15 @@ class OtelResourceDecorator:
         request = get_pyramid_current_request()
         http_route = getattr(request, "matched_route", "")
         http_request_method = getattr(request, "method", "")
-        
+
         span_name = f"{http_request_method} {http_route}"
         with tracer.start_as_current_span(
             span_name, kind=trace.SpanKind.CLIENT
-        ) as span:   
+        ) as span:
             span.set_attribute("url.path", getattr(request, "path", ""))
             span.set_attribute("http.route", http_route)
             span.set_attribute("http.request.method", http_request_method)
-        
+
             span.set_attribute("client.namespace", self.client_identifier)
             span.set_attribute("peer.service", self.smartstack_namespace)
             span.set_attribute("server.namespace", self.smartstack_namespace)
@@ -125,11 +123,7 @@ def inject_zipkin_headers(
     kwargs["_request_options"]["headers"]["X-B3-SpanId"] = format_span_id(
         current_span_context.span_id
     )
-    parent_span = current_span.parent
-    if parent_span is not None:
-        kwargs["_request_options"]["headers"]["X-B3-ParentSpanId"] = format_span_id(
-            parent_span.span_id
-        )
+
     kwargs["_request_options"]["headers"]["X-B3-Sampled"] = (
         "1"
         if (current_span_context.trace_flags & TraceFlags.SAMPLED == TraceFlags.SAMPLED)
