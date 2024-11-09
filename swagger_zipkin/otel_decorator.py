@@ -11,7 +11,6 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from opentelemetry.trace.span import format_span_id
 from opentelemetry.trace.span import format_trace_id
 from opentelemetry.trace.span import TraceFlags
-
 from typing_extensions import ParamSpec
 
 from swagger_zipkin.decorate_client import Client
@@ -33,6 +32,7 @@ class OtelResourceDecorator:
     :param resource: A resource object. eg. `client.pet`, `client.store`.
     :type resource: :class:`swaggerpy.client.Resource` or :class:`bravado_core.resource.Resource`
     """
+
     def __init__(self, resource: Client, client_identifier: str, smartstack_namespace: str) -> None:
         self.resource = resource
         self.client_identifier = client_identifier
@@ -55,19 +55,19 @@ class OtelResourceDecorator:
             span_name, kind=trace.SpanKind.CLIENT
         ) as span:
             with self.handle_exception():
-               span.set_attribute("url.path", getattr(request, "path", ""))
-               span.set_attribute("http.route", http_route)
-               span.set_attribute("http.request.method", http_request_method)
+                span.set_attribute("url.path", getattr(request, "path", ""))
+                span.set_attribute("http.route", http_route)
+                span.set_attribute("http.request.method", http_request_method)
 
-               span.set_attribute("client.namespace", self.client_identifier)
-               span.set_attribute("peer.service", self.smartstack_namespace)
-               span.set_attribute("server.namespace", self.smartstack_namespace)
-               span.set_attribute("http.response.status_code", "200")
+                span.set_attribute("client.namespace", self.client_identifier)
+                span.set_attribute("peer.service", self.smartstack_namespace)
+                span.set_attribute("server.namespace", self.smartstack_namespace)
+                span.set_attribute("http.response.status_code", "200")
 
-               inject_otel_headers(kwargs, current_span=span)
-               inject_zipkin_headers(kwargs, current_span=span)
+                inject_otel_headers(kwargs, current_span=span)
+                inject_zipkin_headers(kwargs, current_span=span)
 
-               return getattr(self.resource, call_name)(*args, **kwargs)
+                return getattr(self.resource, call_name)(*args, **kwargs)
 
     @contextmanager
     def handle_exception(
@@ -82,7 +82,7 @@ class OtelResourceDecorator:
             raise e
 
     def __dir__(self) -> list[str]:
-        return dir(self.resource)
+        return dir(self.resource)  # pragma: no cover
 
 
 class OtelClientDecorator:

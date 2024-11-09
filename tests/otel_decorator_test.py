@@ -1,5 +1,6 @@
 from unittest import mock
 
+import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -19,6 +20,15 @@ smartstack_namespace = "smartstack_namespace"
 tracer = trace.get_tracer("otel_decorator")
 
 
+@pytest.fixture
+def get_request():
+    mock_request = mock.Mock()
+    mock_request.path = "/sample-url"
+    mock_request.method = "GET"
+    mock_request.matched_route = "sample-view"
+    return mock_request
+
+
 def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
     trace_id = format_trace_id(parent_span.get_span_context().trace_id)
     span_id = format_span_id(exported_span.get_span_context().span_id)
@@ -33,7 +43,12 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
     }
 
 
-def test_client_request():
+@mock.patch(
+    "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
+)
+def test_client_request(mock_request, get_request):
+    mock_request.return_value = get_request
+
     client = mock.Mock()
     wrapped_client = OtelClientDecorator(
         client,
@@ -56,9 +71,10 @@ def test_client_request():
             _request_options=create_request_options(parent_span, exported_span)
         )
 
-        assert exported_span.attributes["url.path"] == ""
-        assert exported_span.attributes["http.request.method"] == ""
-        assert exported_span.attributes["http.route"] == ""
+        assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+        assert exported_span.attributes["url.path"] == get_request.path
+        assert exported_span.attributes["http.request.method"] == get_request.method
+        assert exported_span.attributes["http.route"] == get_request.matched_route
         assert exported_span.attributes["client.namespace"] == client_identifier
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
