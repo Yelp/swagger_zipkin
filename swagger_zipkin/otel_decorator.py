@@ -51,12 +51,13 @@ class OtelResourceDecorator:
         http_route = getattr(request, "matched_route", "")
         http_request_method = getattr(request, "method", "")
 
+        parent_span = trace.get_current_span()
         span_name = f"{http_request_method} {http_route}"
         with tracer.start_as_current_span(
             span_name, kind=trace.SpanKind.CLIENT
         ) as span:
-            inject_otel_headers(kwargs, current_span=span)
-            inject_zipkin_headers(kwargs, current_span=span)
+            inject_otel_headers(kwargs, span)
+            inject_zipkin_headers(kwargs, span, parent_span)
 
             with self.handle_exception():
                 span.set_attribute("url.path", getattr(request, "path", ""))
@@ -128,7 +129,7 @@ def inject_otel_headers(
 
 
 def inject_zipkin_headers(
-    kwargs: dict[str, Any], current_span: trace.Span
+        kwargs: dict[str, Any], current_span: trace.Span, parent_span: trace.Span
 ) -> None:
     current_span_context = current_span.get_span_context()
     kwargs["_request_options"]["headers"]["X-B3-TraceId"] = format_trace_id(
@@ -137,6 +138,10 @@ def inject_zipkin_headers(
     kwargs["_request_options"]["headers"]["X-B3-SpanId"] = format_span_id(
         current_span_context.span_id
     )
+    if parent_span is not None and parent_span.is_recording():
+        parent_span_context = parent_span.get_span_context()
+        kwargs["_request_options"]["headers"]["X-B3-ParentSpanId"] = format_span_id(
+        parent_span_context.span_id)
 
     kwargs["_request_options"]["headers"]["X-B3-Sampled"] = (
         "1"

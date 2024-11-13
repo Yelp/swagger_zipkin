@@ -31,17 +31,21 @@ def get_request():
 
 
 def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
-    trace_id = format_trace_id(parent_span.get_span_context().trace_id)
+    trace_id = format_trace_id(exported_span.get_span_context().trace_id)
     span_id = format_span_id(exported_span.get_span_context().span_id)
-    return {
-        'headers': {
-            'traceparent': f'00-{trace_id}-{span_id}-01',
-            'X-B3-TraceId': format_trace_id(parent_span.get_span_context().trace_id),
-            'X-B3-SpanId': format_span_id(exported_span.get_span_context().span_id),
-            'X-B3-Flags': '0',
-            'X-B3-Sampled': '1',
-        }
+
+    headers = {}
+    headers['headers'] = {
+        'traceparent': f'00-{trace_id}-{span_id}-01',
+        'X-B3-TraceId': trace_id,
+        'X-B3-SpanId': span_id,
+        'X-B3-Flags': '0',
+        'X-B3-Sampled': '1',
     }
+    if parent_span is not None:
+        headers['headers']['X-B3-ParentSpanId'] = format_span_id(parent_span.get_span_context().span_id)
+    
+    return headers
 
 
 @mock.patch(
@@ -79,6 +83,42 @@ def test_client_request(mock_request, get_request):
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
         assert exported_span.attributes["http.response.status_code"] == "200"
+
+    memory_exporter.clear()
+
+
+@mock.patch(
+    "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
+)
+def test_client_request_no_parent_span(mock_request, get_request):
+    mock_request.return_value = get_request
+
+    client = mock.Mock()
+    wrapped_client = OtelClientDecorator(
+        client,
+        client_identifier=client_identifier,
+        smartstack_namespace=smartstack_namespace
+    )
+    resource = wrapped_client.resource
+    param = mock.Mock()
+    resource.operation(param)
+
+    assert len(memory_exporter.get_finished_spans()) == 1
+    exported_span = memory_exporter.get_finished_spans()[0]
+
+    client.resource.operation.assert_called_with(
+        param,
+        _request_options=create_request_options(None, exported_span)
+    )
+
+    assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+    assert exported_span.attributes["url.path"] == get_request.path
+    assert exported_span.attributes["http.request.method"] == get_request.method
+    assert exported_span.attributes["http.route"] == get_request.matched_route
+    assert exported_span.attributes["client.namespace"] == client_identifier
+    assert exported_span.attributes["peer.service"] == smartstack_namespace
+    assert exported_span.attributes["server.namespace"] == smartstack_namespace
+    assert exported_span.attributes["http.response.status_code"] == "200"
 
     memory_exporter.clear()
 
