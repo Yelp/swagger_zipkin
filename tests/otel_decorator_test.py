@@ -22,6 +22,11 @@ tracer = trace.get_tracer("otel_decorator")
 
 
 @pytest.fixture
+def setup():
+    memory_exporter.clear()
+
+
+@pytest.fixture
 def get_request():
     mock_request = mock.Mock()
     mock_request.path = "/sample-url"
@@ -51,7 +56,7 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
 @mock.patch(
     "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
 )
-def test_client_request(mock_request, get_request):
+def test_client_request(mock_request, get_request, setup):
     mock_request.return_value = get_request
 
     with tracer.start_as_current_span(
@@ -84,13 +89,11 @@ def test_client_request(mock_request, get_request):
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
         assert exported_span.attributes["http.response.status_code"] == "200"
 
-    memory_exporter.clear()
-
 
 @mock.patch(
     "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
 )
-def test_client_request_no_parent_span(mock_request, get_request):
+def test_client_request_no_parent_span(mock_request, get_request, setup):
     mock_request.return_value = get_request
 
     client = mock.Mock()
@@ -120,13 +123,11 @@ def test_client_request_no_parent_span(mock_request, get_request):
     assert exported_span.attributes["server.namespace"] == smartstack_namespace
     assert exported_span.attributes["http.response.status_code"] == "200"
 
-    memory_exporter.clear()
-
 
 @mock.patch(
     "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
 )
-def test_with_headers_exception(mock_request, get_request):
+def test_with_headers_exception(mock_request, get_request, setup):
     mock_request.return_value = get_request
 
     # Create a mock resource and configure it to raise an exception
@@ -151,5 +152,3 @@ def test_with_headers_exception(mock_request, get_request):
     assert exported_span.attributes["peer.service"] == smartstack_namespace
     assert exported_span.attributes["server.namespace"] == smartstack_namespace
     assert exported_span.attributes["http.response.status_code"] == "500"
-
-    memory_exporter.clear()
