@@ -56,9 +56,13 @@ class OtelResourceDecorator:
         with tracer.start_as_current_span(
             span_name, kind=trace.SpanKind.CLIENT
         ) as span:
-            inject_otel_headers(kwargs, span)
-            inject_zipkin_headers(kwargs, span, parent_span)
+            self.inject_otel_headers(kwargs, span)
+            self.inject_zipkin_headers(kwargs, span, parent_span)
 
+            # ideally wrap with_headers with exception and catch a specific
+            # exception - HTTPError? and general exception in handle_exception. 
+            # This would create a dependency on bravado package. Is this ok?
+            # https://github.com/Yelp/bravado/blob/master/bravado/exception.py
             with self.handle_exception():
                 span.set_attribute("url.path", getattr(request, "path", ""))
                 span.set_attribute("http.route", http_route)
@@ -120,35 +124,35 @@ class OtelClientDecorator:
         return dir(self._client)  # pragma: no cover
 
 
-def inject_otel_headers(
-    kwargs: dict[str, Any], current_span: trace.Span
-) -> None:
-    propagator = TraceContextTextMapPropagator()
-    carrier = kwargs['_request_options']["headers"]
-    propagator.inject(carrier=carrier, context=trace.set_span_in_context(current_span))
+    def inject_otel_headers(
+        self, kwargs: dict[str, Any], current_span: trace.Span
+    ) -> None:
+        propagator = TraceContextTextMapPropagator()
+        carrier = kwargs['_request_options']["headers"]
+        propagator.inject(carrier=carrier, context=trace.set_span_in_context(current_span))
 
 
-def inject_zipkin_headers(
-        kwargs: dict[str, Any], current_span: trace.Span, parent_span: trace.Span
-) -> None:
-    current_span_context = current_span.get_span_context()
-    kwargs["_request_options"]["headers"]["X-B3-TraceId"] = format_trace_id(
-        current_span_context.trace_id
-    )
-    kwargs["_request_options"]["headers"]["X-B3-SpanId"] = format_span_id(
-        current_span_context.span_id
-    )
-    if parent_span is not None and parent_span.is_recording():
-        parent_span_context = parent_span.get_span_context()
-        kwargs["_request_options"]["headers"]["X-B3-ParentSpanId"] = format_span_id(
-        parent_span_context.span_id)
+    def inject_zipkin_headers(
+            self, kwargs: dict[str, Any], current_span: trace.Span, parent_span: trace.Span
+    ) -> None:
+        current_span_context = current_span.get_span_context()
+        kwargs["_request_options"]["headers"]["X-B3-TraceId"] = format_trace_id(
+            current_span_context.trace_id
+        )
+        kwargs["_request_options"]["headers"]["X-B3-SpanId"] = format_span_id(
+            current_span_context.span_id
+        )
+        if parent_span is not None and parent_span.is_recording():
+            parent_span_context = parent_span.get_span_context()
+            kwargs["_request_options"]["headers"]["X-B3-ParentSpanId"] = format_span_id(
+            parent_span_context.span_id)
 
-    kwargs["_request_options"]["headers"]["X-B3-Sampled"] = (
-        "1"
-        if (current_span_context.trace_flags & TraceFlags.SAMPLED == TraceFlags.SAMPLED)
-        else "0"
-    )
-    kwargs["_request_options"]["headers"]["X-B3-Flags"] = "0"
+        kwargs["_request_options"]["headers"]["X-B3-Sampled"] = (
+            "1"
+            if (current_span_context.trace_flags & TraceFlags.SAMPLED == TraceFlags.SAMPLED)
+            else "0"
+        )
+        kwargs["_request_options"]["headers"]["X-B3-Flags"] = "0"
 
 
 # pragma: no cover
