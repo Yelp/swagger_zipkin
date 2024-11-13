@@ -18,7 +18,8 @@ from swagger_zipkin.decorate_client import decorate_client
 from swagger_zipkin.decorate_client import Resource
 
 if TYPE_CHECKING:
-    import pyramid.request.Request  # type: ignore
+    # pragma: no cover
+    import pyramid.request.Request  # type: ignore[import-untyped]
 
 T = TypeVar('T', covariant=True)
 P = ParamSpec('P')
@@ -54,6 +55,9 @@ class OtelResourceDecorator:
         with tracer.start_as_current_span(
             span_name, kind=trace.SpanKind.CLIENT
         ) as span:
+            inject_otel_headers(kwargs, current_span=span)
+            inject_zipkin_headers(kwargs, current_span=span)
+
             with self.handle_exception():
                 span.set_attribute("url.path", getattr(request, "path", ""))
                 span.set_attribute("http.route", http_route)
@@ -63,9 +67,6 @@ class OtelResourceDecorator:
                 span.set_attribute("peer.service", self.smartstack_namespace)
                 span.set_attribute("server.namespace", self.smartstack_namespace)
                 span.set_attribute("http.response.status_code", "200")
-
-                inject_otel_headers(kwargs, current_span=span)
-                inject_zipkin_headers(kwargs, current_span=span)
 
                 return getattr(self.resource, call_name)(*args, **kwargs)
 
@@ -145,6 +146,7 @@ def inject_zipkin_headers(
     kwargs["_request_options"]["headers"]["X-B3-Flags"] = "0"
 
 
+# pragma: no cover
 def get_pyramid_current_request() -> pyramid.request.Request | None:
     try:
         threadlocal = importlib.import_module("pyramid.threadlocal")

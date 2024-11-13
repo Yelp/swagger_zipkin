@@ -9,6 +9,7 @@ from opentelemetry.trace.span import format_span_id
 from opentelemetry.trace.span import format_trace_id
 
 from swagger_zipkin.otel_decorator import OtelClientDecorator
+from swagger_zipkin.otel_decorator import OtelResourceDecorator
 
 memory_exporter = InMemorySpanExporter()
 span_processor = SimpleSpanProcessor(memory_exporter)
@@ -49,16 +50,15 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
 def test_client_request(mock_request, get_request):
     mock_request.return_value = get_request
 
-    client = mock.Mock()
-    wrapped_client = OtelClientDecorator(
-        client,
-        client_identifier=client_identifier,
-        smartstack_namespace=smartstack_namespace
-    )
-
     with tracer.start_as_current_span(
         "parent_span", kind=trace.SpanKind.SERVER
     ) as parent_span:
+        client = mock.Mock()
+        wrapped_client = OtelClientDecorator(
+            client,
+            client_identifier=client_identifier,
+            smartstack_namespace=smartstack_namespace
+        )
         resource = wrapped_client.resource
         param = mock.Mock()
         resource.operation(param)
@@ -79,3 +79,37 @@ def test_client_request(mock_request, get_request):
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
         assert exported_span.attributes["http.response.status_code"] == "200"
+
+    memory_exporter.clear()
+
+
+@mock.patch(
+    "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
+)
+def test_with_headers_exception(mock_request, get_request):
+    mock_request.return_value = get_request
+
+    # Create a mock resource and configure it to raise an exception
+    mock_resource = mock.MagicMock()
+    mock_method = mock.MagicMock(side_effect=Exception("Simulated exception"))
+    setattr(mock_resource, 'test_call', mock_method)
+
+    decorator = OtelResourceDecorator(resource=mock_resource, client_identifier="test_client",
+                                      smartstack_namespace="smartstack_namespace")
+
+    with pytest.raises(Exception):
+        decorator.with_headers("test_call")
+
+    assert len(memory_exporter.get_finished_spans()) == 1
+    exported_span = memory_exporter.get_finished_spans()[0]
+
+    assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+    assert exported_span.attributes["url.path"] == get_request.path
+    assert exported_span.attributes["http.request.method"] == get_request.method
+    assert exported_span.attributes["http.route"] == get_request.matched_route
+    assert exported_span.attributes["client.namespace"] == client_identifier
+    assert exported_span.attributes["peer.service"] == smartstack_namespace
+    assert exported_span.attributes["server.namespace"] == smartstack_namespace
+    assert exported_span.attributes["http.response.status_code"] == "500"
+
+    memory_exporter.clear()
