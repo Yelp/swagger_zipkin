@@ -69,14 +69,14 @@ def test_client_request(mock_request, get_request, setup):
             smartstack_namespace=smartstack_namespace
         )
         resource = wrapped_client.resource
-        param = mock.Mock()
-        resource.operation(param)
+        param1 = mock.Mock()
+        resource.operation(param1)
 
         assert len(memory_exporter.get_finished_spans()) == 1
         exported_span = memory_exporter.get_finished_spans()[0]
 
         client.resource.operation.assert_called_with(
-            param,
+            param1,
             _request_options=create_request_options(parent_span, exported_span)
         )
 
@@ -88,6 +88,28 @@ def test_client_request(mock_request, get_request, setup):
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
         assert exported_span.attributes["http.response.status_code"] == "200"
+
+        param2 = mock.Mock()
+        resource.operation(param2)
+
+        assert len(memory_exporter.get_finished_spans()) == 2
+        exported_span = memory_exporter.get_finished_spans()[1]
+
+        client.resource.operation.assert_called_with(
+            param2,
+            _request_options=create_request_options(parent_span, exported_span)
+        )
+
+        assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+        assert exported_span.attributes["url.path"] == get_request.path
+        assert exported_span.attributes["http.request.method"] == get_request.method
+        assert exported_span.attributes["http.route"] == get_request.matched_route
+        assert exported_span.attributes["client.namespace"] == client_identifier
+        assert exported_span.attributes["peer.service"] == smartstack_namespace
+        assert exported_span.attributes["server.namespace"] == smartstack_namespace
+        assert exported_span.attributes["http.response.status_code"] == "200"
+
+
 
 
 @mock.patch(
@@ -133,16 +155,22 @@ def test_with_headers_exception(mock_request, get_request, setup):
     # Create a mock resource and configure it to raise an exception
     mock_resource = mock.MagicMock()
     mock_method = mock.MagicMock(side_effect=Exception("Simulated exception"))
-    setattr(mock_resource, 'test_call', mock_method)
+    setattr(mock_resource, 'test_operation', mock_method)
 
     decorator = OtelResourceDecorator(resource=mock_resource, client_identifier="test_client",
                                       smartstack_namespace="smartstack_namespace")
 
     with pytest.raises(Exception):
-        decorator.with_headers("test_call")
+        decorator.with_headers("test_operation")
+
 
     assert len(memory_exporter.get_finished_spans()) == 1
     exported_span = memory_exporter.get_finished_spans()[0]
+
+    mock_resource.operation.assert_called_with(
+        "test_operation",
+        _request_options=create_request_options(None, exported_span)
+    )
 
     assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
     assert exported_span.attributes["url.path"] == get_request.path
@@ -151,4 +179,5 @@ def test_with_headers_exception(mock_request, get_request, setup):
     assert exported_span.attributes["client.namespace"] == client_identifier
     assert exported_span.attributes["peer.service"] == smartstack_namespace
     assert exported_span.attributes["server.namespace"] == smartstack_namespace
+    assert exported_span.attributes["error.type"] == "Exception" 
     assert exported_span.attributes["http.response.status_code"] == "500"
