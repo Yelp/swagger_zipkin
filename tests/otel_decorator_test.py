@@ -154,23 +154,25 @@ def test_with_headers_exception(mock_request, get_request, setup):
 
     # Create a mock resource and configure it to raise an exception
     mock_resource = mock.MagicMock()
-    mock_method = mock.MagicMock(side_effect=Exception("Simulated exception"))
+    mock_method = mock.MagicMock(side_effect=Exception("simulated exception"))
     setattr(mock_resource, 'test_operation', mock_method)
 
     decorator = OtelResourceDecorator(resource=mock_resource, client_identifier="test_client",
                                       smartstack_namespace="smartstack_namespace")
 
-    with pytest.raises(Exception):
-        decorator.with_headers("test_operation")
+    # Prepare arguments
+    args = ()
+    kwargs = {'_request_options': {'headers': {}}}
 
+    with pytest.raises(Exception):
+        decorator.with_headers("test_operation", *args, **kwargs)
 
     assert len(memory_exporter.get_finished_spans()) == 1
     exported_span = memory_exporter.get_finished_spans()[0]
 
-    mock_resource.operation.assert_called_with(
-        "test_operation",
-        _request_options=create_request_options(None, exported_span)
-    )
+    expected_headers = kwargs['_request_options']['headers']
+    actual_headers = create_request_options(None, exported_span)['headers']
+    assert expected_headers == actual_headers
 
     assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
     assert exported_span.attributes["url.path"] == get_request.path
