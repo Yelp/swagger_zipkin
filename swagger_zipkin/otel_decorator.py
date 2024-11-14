@@ -18,8 +18,7 @@ from swagger_zipkin.decorate_client import decorate_client
 from swagger_zipkin.decorate_client import Resource
 
 if TYPE_CHECKING:
-    # pragma: no cover
-    import pyramid.request.Request  # type: ignore[import-untyped]
+    import pyramid.request.Request   # noqa: F401  
 
 T = TypeVar('T', covariant=True)
 P = ParamSpec('P')
@@ -47,6 +46,9 @@ class OtelResourceDecorator:
         request_options: dict = kwargs['_request_options']
         request_options.setdefault('headers', {})
 
+        # what is the right way to get the Request object. can we use contruct_request
+        # https://github.com/Yelp/bravado/blob/master/bravado/client.py#L283C5-L283C22
+        # this would create a bravado dependency. 
         request = get_pyramid_current_request()
         http_route = getattr(request, "matched_route", "")
         http_request_method = getattr(request, "method", "")
@@ -155,10 +157,6 @@ class OtelClientDecorator:
         return dir(self._client)  # pragma: no cover
 
 
-
-
-
-# pragma: no cover
 def get_pyramid_current_request() -> pyramid.request.Request | None:
     try:
         threadlocal = importlib.import_module("pyramid.threadlocal")
