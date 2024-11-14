@@ -2,10 +2,10 @@ from unittest import mock
 
 import pytest
 from opentelemetry import trace
-from opentelemetry.trace import SpanKind
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from opentelemetry.trace import SpanKind
 from opentelemetry.trace.span import format_span_id
 from opentelemetry.trace.span import format_trace_id
 
@@ -50,7 +50,7 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
     }
     if parent_span is not None:
         headers['headers']['X-B3-ParentSpanId'] = format_span_id(parent_span.get_span_context().span_id)
-    
+
     return headers
 
 
@@ -110,8 +110,6 @@ def test_client_request(mock_request, get_request, setup):
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
         assert exported_span.attributes["http.response.status_code"] == "200"
-
-
 
 
 @mock.patch(
@@ -185,5 +183,5 @@ def test_with_headers_exception(mock_request, get_request, setup):
     assert exported_span.attributes["client.namespace"] == client_identifier
     assert exported_span.attributes["peer.service"] == smartstack_namespace
     assert exported_span.attributes["server.namespace"] == smartstack_namespace
-    assert exported_span.attributes["error.type"] == "Exception" 
+    assert exported_span.attributes["error.type"] == "Exception"
     assert exported_span.attributes["http.response.status_code"] == "500"
