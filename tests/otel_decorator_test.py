@@ -2,6 +2,7 @@ from unittest import mock
 
 import pytest
 from opentelemetry import trace
+from opentelemetry.trace import SpanKind
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -80,6 +81,7 @@ def test_client_request(mock_request, get_request, setup):
             _request_options=create_request_options(parent_span, exported_span)
         )
 
+        assert exported_span.kind == SpanKind.CLIENT
         assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
         assert exported_span.attributes["url.path"] == get_request.path
         assert exported_span.attributes["http.request.method"] == get_request.method
@@ -136,6 +138,7 @@ def test_client_request_no_parent_span(mock_request, get_request, setup):
         _request_options=create_request_options(None, exported_span)
     )
 
+    assert exported_span.kind == SpanKind.CLIENT
     assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
     assert exported_span.attributes["url.path"] == get_request.path
     assert exported_span.attributes["http.request.method"] == get_request.method
@@ -174,6 +177,7 @@ def test_with_headers_exception(mock_request, get_request, setup):
     actual_headers = create_request_options(None, exported_span)['headers']
     assert expected_headers == actual_headers
 
+    assert exported_span.kind == SpanKind.CLIENT
     assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
     assert exported_span.attributes["url.path"] == get_request.path
     assert exported_span.attributes["http.request.method"] == get_request.method

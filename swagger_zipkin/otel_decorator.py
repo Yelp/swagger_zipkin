@@ -123,8 +123,8 @@ class OtelResourceDecorator:
 
 
 class OtelClientDecorator:
-    """A wrapper to swagger client (swagger-py or bravado) to pass on zipkin
-    headers to the service call.
+    """A wrapper to swagger client (swagger-py or bravado) to pass on otel and zipkin
+    headers to the service call. It will also generate a CLIENT span for the outgoing call.
 
     Even though client is initialised once, all the calls made will have
     independent spans.
