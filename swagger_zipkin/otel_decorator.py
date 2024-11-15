@@ -47,7 +47,7 @@ class OtelResourceDecorator:
 
             operation = getattr(self.resource, call_name)
             request = construct_request(operation, request_options, **kwargs)  # type: ignore
-            
+
             url = getattr(request, "url", "")
             path = getattr(request, "path", "")
             method = getattr(request, "method", "")
@@ -85,7 +85,7 @@ class OtelResourceDecorator:
         try:
             yield
         except Exception as e:
-            # not raising an exception if the instrumentation had a problem 
+            # not raising an exception if the instrumentation had a problem
             raise e
 
     def __dir__(self) -> list[str]:

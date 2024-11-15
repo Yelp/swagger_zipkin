@@ -1,6 +1,8 @@
 from unittest import mock
 
 import pytest
+from bravado.exception import HTTPError
+from bravado.exception import HTTPInternalServerError
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -11,9 +13,6 @@ from opentelemetry.trace.span import format_trace_id
 
 from swagger_zipkin.otel_decorator import OtelClientDecorator
 from swagger_zipkin.otel_decorator import OtelResourceDecorator
-
-from bravado.exception import HTTPError
-from bravado.exception import HTTPInternalServerError
 
 memory_exporter = InMemorySpanExporter()
 span_processor = SimpleSpanProcessor(memory_exporter)
@@ -165,7 +164,7 @@ def test_with_headers_exception(mock_request, get_request, setup):
 
     args = ()
     kwargs = {'_request_options': {'headers': {}}}
-    
+
     with pytest.raises(HTTPError):
         decorator.with_headers("test_operation", *args, **kwargs)
 
