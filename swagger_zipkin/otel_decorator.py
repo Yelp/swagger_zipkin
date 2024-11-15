@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import importlib
 from contextlib import contextmanager
 from typing import Any
-from typing import TYPE_CHECKING
 from typing import TypeVar
 
+from bravado.client import construct_request
+from bravado.exception import HTTPError
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.trace.span import format_span_id
@@ -16,9 +16,6 @@ from typing_extensions import ParamSpec
 from swagger_zipkin.decorate_client import Client
 from swagger_zipkin.decorate_client import decorate_client
 from swagger_zipkin.decorate_client import Resource
-
-if TYPE_CHECKING:
-    import pyramid.request.Request   # type: ignore # noqa: F401
 
 T = TypeVar('T', covariant=True)
 P = ParamSpec('P')
@@ -33,7 +30,7 @@ class OtelResourceDecorator:
     :type resource: :class:`swaggerpy.client.Resource` or :class:`bravado_core.resource.Resource`
     """
 
-    def __init__(self, resource: Client, client_identifier: str, smartstack_namespace: str) -> None:
+    def __init__(self, resource: Resource, client_identifier: str, smartstack_namespace: str) -> None:
         self.resource = resource
         self.client_identifier = client_identifier
         self.smartstack_namespace = smartstack_namespace
@@ -42,41 +39,44 @@ class OtelResourceDecorator:
         return decorate_client(self.resource, self.with_headers, name)
 
     def with_headers(self, call_name: str, *args: Any, **kwargs: Any) -> Any:
-        kwargs.setdefault('_request_options', {})
-        request_options: dict = kwargs['_request_options']
-        request_options.setdefault('headers', {})
 
-        # what is the right way to get the Request object. can we use contruct_request
-        # https://github.com/Yelp/bravado/blob/master/bravado/client.py#L283C5-L283C22
-        # this would create a bravado dependency.
-        request = get_pyramid_current_request()
-        http_route = getattr(request, "matched_route", "")
-        http_request_method = getattr(request, "method", "")
+        with self.handle_exception():
+            kwargs.setdefault('_request_options', {})
+            request_options: dict = kwargs['_request_options']
+            request_options.setdefault('headers', {})
 
-        parent_span = trace.get_current_span()
-        span_name = f"{http_request_method} {http_route}"
-        with tracer.start_as_current_span(
-            span_name, kind=trace.SpanKind.CLIENT
-        ) as span:
-            self.inject_otel_headers(kwargs, span)
-            self.inject_zipkin_headers(kwargs, span, parent_span)
+            operation = getattr(self.resource, call_name)
+            request = construct_request(operation, request_options, **kwargs)  # type: ignore
+            
+            url = getattr(request, "url", "")
+            path = getattr(request, "path", "")
+            method = getattr(request, "method", "")
 
-            # ideally the exception should be scoped for self.with_headers
-            # handle_exception should handle general excetion and the specific exception HTTPError
-            # But this would create a dependency on bravado package. Is this ok?
-            # Assuming resource.operation does throw HTTPError
-            # https://github.com/Yelp/bravado/blob/master/bravado/exception.py
-            with self.handle_exception():
-                span.set_attribute("url.path", getattr(request, "path", ""))
-                span.set_attribute("http.route", http_route)
-                span.set_attribute("http.request.method", http_request_method)
+            parent_span = trace.get_current_span()
+            span_name = f"{method} {path}"
 
+            with tracer.start_as_current_span(
+                span_name, kind=trace.SpanKind.CLIENT
+            ) as span:
+                span.set_attribute("url.path", url)
+                span.set_attribute("http.request.method", method)
                 span.set_attribute("client.namespace", self.client_identifier)
                 span.set_attribute("peer.service", self.smartstack_namespace)
                 span.set_attribute("server.namespace", self.smartstack_namespace)
                 span.set_attribute("http.response.status_code", "200")
 
-                return getattr(self.resource, call_name)(*args, **kwargs)
+                self.inject_otel_headers(kwargs, span)
+                self.inject_zipkin_headers(kwargs, span, parent_span)
+
+                try:
+                    operation(*args, **kwargs)
+                except HTTPError as e:
+                    span.set_attribute("error.type", e.__class__.__name__)
+                    span.set_status(trace.Status(trace.StatusCode.ERROR, e.message))
+                    span.set_attribute("http.response.status_code", e.status_code)
+                    raise e
+
+                return operation
 
     @contextmanager
     def handle_exception(
@@ -85,9 +85,7 @@ class OtelResourceDecorator:
         try:
             yield
         except Exception as e:
-            span = trace.get_current_span()
-            span.set_attribute("error.type", e.__class__.__name__)
-            span.set_attribute("http.response.status_code", "500")
+            # not raising an exception if the instrumentation had a problem 
             raise e
 
     def __dir__(self) -> list[str]:
@@ -154,12 +152,3 @@ class OtelClientDecorator:
 
     def __dir__(self) -> list[str]:
         return dir(self._client)  # pragma: no cover
-
-
-def get_pyramid_current_request() -> pyramid.request.Request | None:
-    try:
-        threadlocal = importlib.import_module("pyramid.threadlocal")
-    except ImportError:
-        return None
-
-    return threadlocal.get_current_request()

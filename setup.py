@@ -17,6 +17,7 @@ setup(
     install_requires=[
         'py_zipkin>=0.10.1',
         'opentelemetry-sdk>=0.26.1',
+        'bravado>=11.0.3'
     ],
     keywords='zipkin',
     classifiers=[

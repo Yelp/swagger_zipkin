@@ -12,6 +12,9 @@ from opentelemetry.trace.span import format_trace_id
 from swagger_zipkin.otel_decorator import OtelClientDecorator
 from swagger_zipkin.otel_decorator import OtelResourceDecorator
 
+from bravado.exception import HTTPError
+from bravado.exception import HTTPInternalServerError
+
 memory_exporter = InMemorySpanExporter()
 span_processor = SimpleSpanProcessor(memory_exporter)
 trace.set_tracer_provider(TracerProvider())
@@ -30,9 +33,9 @@ def setup():
 @pytest.fixture
 def get_request():
     mock_request = mock.Mock()
+    mock_request.url = "/sample-url"
     mock_request.path = "/sample-url"
     mock_request.method = "GET"
-    mock_request.matched_route = "sample-view"
     return mock_request
 
 
@@ -55,7 +58,7 @@ def create_request_options(parent_span: trace.Span, exported_span: trace.Span):
 
 
 @mock.patch(
-    "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
+    "swagger_zipkin.otel_decorator.construct_request", autospec=True
 )
 def test_client_request(mock_request, get_request, setup):
     mock_request.return_value = get_request
@@ -82,10 +85,9 @@ def test_client_request(mock_request, get_request, setup):
         )
 
         assert exported_span.kind == SpanKind.CLIENT
-        assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+        assert exported_span.name == f"{get_request.method} {get_request.path}"
         assert exported_span.attributes["url.path"] == get_request.path
         assert exported_span.attributes["http.request.method"] == get_request.method
-        assert exported_span.attributes["http.route"] == get_request.matched_route
         assert exported_span.attributes["client.namespace"] == client_identifier
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
@@ -102,10 +104,9 @@ def test_client_request(mock_request, get_request, setup):
             _request_options=create_request_options(parent_span, exported_span)
         )
 
-        assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+        assert exported_span.name == f"{get_request.method} {get_request.path}"
         assert exported_span.attributes["url.path"] == get_request.path
         assert exported_span.attributes["http.request.method"] == get_request.method
-        assert exported_span.attributes["http.route"] == get_request.matched_route
         assert exported_span.attributes["client.namespace"] == client_identifier
         assert exported_span.attributes["peer.service"] == smartstack_namespace
         assert exported_span.attributes["server.namespace"] == smartstack_namespace
@@ -113,7 +114,7 @@ def test_client_request(mock_request, get_request, setup):
 
 
 @mock.patch(
-    "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
+    "swagger_zipkin.otel_decorator.construct_request", autospec=True
 )
 def test_client_request_no_parent_span(mock_request, get_request, setup):
     mock_request.return_value = get_request
@@ -137,10 +138,9 @@ def test_client_request_no_parent_span(mock_request, get_request, setup):
     )
 
     assert exported_span.kind == SpanKind.CLIENT
-    assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+    assert exported_span.name == f"{get_request.method} {get_request.path}"
     assert exported_span.attributes["url.path"] == get_request.path
     assert exported_span.attributes["http.request.method"] == get_request.method
-    assert exported_span.attributes["http.route"] == get_request.matched_route
     assert exported_span.attributes["client.namespace"] == client_identifier
     assert exported_span.attributes["peer.service"] == smartstack_namespace
     assert exported_span.attributes["server.namespace"] == smartstack_namespace
@@ -148,24 +148,25 @@ def test_client_request_no_parent_span(mock_request, get_request, setup):
 
 
 @mock.patch(
-    "swagger_zipkin.otel_decorator.get_pyramid_current_request", autospec=True
+    "swagger_zipkin.otel_decorator.construct_request", autospec=True
 )
 def test_with_headers_exception(mock_request, get_request, setup):
     mock_request.return_value = get_request
 
     # Create a mock resource and configure it to raise an exception
     mock_resource = mock.MagicMock()
-    mock_method = mock.MagicMock(side_effect=Exception("simulated exception"))
+    mock_response = mock.MagicMock()
+    mock_response.status_code = "500"
+    mock_method = mock.MagicMock(side_effect=HTTPInternalServerError(response=mock_response))
     setattr(mock_resource, 'test_operation', mock_method)
 
     decorator = OtelResourceDecorator(resource=mock_resource, client_identifier="test_client",
                                       smartstack_namespace="smartstack_namespace")
 
-    # Prepare arguments
     args = ()
     kwargs = {'_request_options': {'headers': {}}}
-
-    with pytest.raises(Exception):
+    
+    with pytest.raises(HTTPError):
         decorator.with_headers("test_operation", *args, **kwargs)
 
     assert len(memory_exporter.get_finished_spans()) == 1
@@ -176,12 +177,11 @@ def test_with_headers_exception(mock_request, get_request, setup):
     assert expected_headers == actual_headers
 
     assert exported_span.kind == SpanKind.CLIENT
-    assert exported_span.name == f"{get_request.method} {get_request.matched_route}"
+    assert exported_span.name == f"{get_request.method} {get_request.path}"
     assert exported_span.attributes["url.path"] == get_request.path
     assert exported_span.attributes["http.request.method"] == get_request.method
-    assert exported_span.attributes["http.route"] == get_request.matched_route
     assert exported_span.attributes["client.namespace"] == client_identifier
     assert exported_span.attributes["peer.service"] == smartstack_namespace
     assert exported_span.attributes["server.namespace"] == smartstack_namespace
-    assert exported_span.attributes["error.type"] == "Exception"
+    assert exported_span.attributes["error.type"] == "HTTPInternalServerError"
     assert exported_span.attributes["http.response.status_code"] == "500"
