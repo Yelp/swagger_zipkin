@@ -22,7 +22,7 @@ class ZipkinResourceDecorator:
     :type resource: :class:`swaggerpy.client.Resource` or :class:`bravado_core.resource.Resource`
     """
 
-    def __init__(self, resource: Client, context_stack: Stack | None = None) -> None:
+    def __init__(self, resource: Resource, context_stack: Stack | None = None) -> None:
         self.resource = resource
         self._context_stack = context_stack
 

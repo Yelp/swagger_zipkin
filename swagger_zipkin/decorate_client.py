@@ -44,7 +44,7 @@ class OperationDecorator(Generic[P, T]):
     :type  func: callable
     """
 
-    def __init__(self, operation: Resource, func: Callable[P, T]) -> None:
+    def __init__(self, operation: Operation, func: Callable[P, T]) -> None:
         self.operation = operation
         self.func = func
 
@@ -56,8 +56,8 @@ class OperationDecorator(Generic[P, T]):
 
 
 def decorate_client(
-    api_client: Client,
-    func: Callable[P, T],
+    api_client: Resource,
+    func: Callable[[str, P.args, P.kwargs], T],
     name: str,
 ) -> Resource[P, T]:
     """A helper for decorating :class:`bravado.client.SwaggerClient`.
